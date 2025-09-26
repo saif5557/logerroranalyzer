@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Log Error Analyzer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-bs5/1.13.4/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        .severity-critical { background-color: #dc3545; color: white; }
+        .severity-high { background-color: #fd7e14; color: white; }
+        .severity-medium { background-color: #ffc107; color: black; }
+        .severity-low { background-color: #28a745; color: white; }
+
+        .log-level-fatal { color: #dc3545; font-weight: bold; }
+        .log-level-critical { color: #fd7e14; font-weight: bold; }
+        .log-level-warning { color: #ffc107; font-weight: bold; }
+        .log-level-error { color: #dc3545; font-weight: bold; }
+
+        .matched-true { border-left: 4px solid #28a745; }
+        .matched-false { border-left: 4px solid #ffc107; }
+
+        .upload-area {
+            border: 2px dashed #ced4da;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin: 10px 0;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .error-details {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .solution-cell {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-bug"></i> Log Error Analyzer
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/"><i class="fas fa-home"></i> Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/error-codes"><i class="fas fa-cog"></i> Error Codes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/reports"><i class="fas fa-chart-bar"></i> Reports</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-search"></i> Log Error Analysis</h1>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4" id="statsRow" style="display: none;">
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <h3 id="totalErrors">0</h3>
+                    <p>Total Errors</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-fire fa-2x mb-2"></i>
+                    <h3 id="criticalErrors">0</h3>
+                    <p>Critical</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <h3 id="highErrors">0</h3>
+                    <p>High Priority</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h3 id="matchedErrors">0</h3>
+                    <p>Matched</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3><i class="fas fa-upload"></i> Upload Log File or Paste Content</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>File Upload</h5>
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                        <p>Drag and drop your log file here, or click to browse</p>
+                        <input type="file" class="form-control" id="logFile" accept=".log,.txt" style="display: none;">
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('logFile').click()">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-success mt-2" id="analyzeFileBtn" disabled>
+                        <i class="fas fa-search"></i> Analyze File
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <h5>Text Input</h5>
+                    <textarea class="form-control" id="logText" rows="8" placeholder="Paste your log content here..."></textarea>
+                    <button type="button" class="btn btn-secondary mt-2" id="analyzeTextBtn">
+                        <i class="fas fa-search"></i> Analyze Text
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary mt-2" id="clearTextBtn">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="text-center d-none">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Analyzing log file...</p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="d-none">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                <h3><i class="fas fa-table"></i> Error Analysis Results</h3>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-success btn-sm" id="exportCsvBtn">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                    <button class="btn btn-info btn-sm" id="exportHtmlBtn">
+                        <i class="fas fa-file-alt"></i> Export HTML
+                    </button>
+                    <button class="btn btn-warning btn-sm" id="filterBtn">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filter Section -->
+                <div class="row mb-3" id="filterSection" style="display: none;">
+                    <div class="col-md-3">
+                        <select class="form-select" id="severityFilter">
+                            <option value="">All Severities</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="levelFilter">
+                            <option value="">All Levels</option>
+                            <option value="FATAL">Fatal</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="ERROR">Error</option>
+                            <option value="WARNING">Warning</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="matchedFilter">
+                            <option value="">All Results</option>
+                            <option value="true">Matched Only</option>
+                            <option value="false">Unmatched Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="componentFilter" placeholder="Filter by component...">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="resultsTable">
+                        <thead class="table-dark">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Error Code</th>
+                            <th>Type</th>
+                            <th>Level</th>
+                            <th>Component</th>
+                            <th>Description</th>
+                            <th>Solution</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net/1.13.4/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-bs5/1.13.4/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script th:inline="none">
+    let analysisResults = [];
+    let dataTable;
+
+    $(document).ready(function() {
+        initializeEventHandlers();
+        setupDragAndDrop();
+    });
+
+    function initializeEventHandlers() {
+        $('#logFile').on('change', function() {
+            const file = this.files[0];
+            $('#analyzeFileBtn').prop('disabled', !file);
+            if (file) {
+                $('#uploadArea p').text(`Selected: ${file.name}`);
+            }
+        });
+
+        $('#analyzeFileBtn').on('click', analyzeFile);
+        $('#analyzeTextBtn').on('click', analyzeText);
+        $('#clearTextBtn').on('click', () => $('#logText').val(''));
+        $('#exportCsvBtn').on('click', exportCSV);
+        $('#exportHtmlBtn').on('click', exportHTML);
+        $('#filterBtn').on('click', toggleFilter);
+
+        // Filter event handlers
+        $('#severityFilter, #levelFilter, #matchedFilter, #componentFilter').on('change keyup', applyFilters);
+    }
+
+    function setupDragAndDrop() {
+        const uploadArea = $('#uploadArea')[0];
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                $('#logFile')[0].files = files;
+                $('#analyzeFileBtn').prop('disabled', false);
+                $('#uploadArea p').text(`Selected: ${files[0].name}`);
+            }
+        });
+    }
+
+    function analyzeFile() {
+        const fileInput = $('#logFile')[0];
+        if (!fileInput.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        showLoading(true);
+
+        $.ajax({
+            url: '/api/analysis/upload',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(results) {
+                displayResults(results);
+            },
+            error: function(xhr) {
+                showError('Failed to analyze file: ' + xhr.responseText);
+            },
+            complete: function() {
+                showLoading(false);
+            }
+        });
+    }
+
+    function analyzeText() {
+        const logContent = $('#logText').val().trim();
+        if (!logContent) {
+            showError('Please enter log content to analyze.');
+            return;
+        }
+
+        showLoading(true);
+
+        $.ajax({
+            url: '/api/analysis/text',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                logContent: logContent,
+                fileName: 'manual_input.txt'
+            }),
+            success: function(results) {
+                displayResults(results);
+            },
+            error: function(xhr) {
+                showError('Failed to analyze text: ' + xhr.responseText);
+            },
+            complete: function() {
+                showLoading(false);
+            }
+        });
+    }
+
+    function displayResults(results) {
+        analysisResults = results;
+        updateStatistics(results);
+        populateTable(results);
+        $('#resultsSection').removeClass('d-none');
+        $('#statsRow').show();
+    }
+
+    function updateStatistics(results) {
+        $('#totalErrors').text(results.length);
+        $('#criticalErrors').text(results.filter(r => r.severity === 'CRITICAL').length);
+        $('#highErrors').text(results.filter(r => r.severity === 'HIGH').length);
+        $('#matchedErrors').text(results.filter(r => r.matched).length);
+    }
+
+    function populateTable(results) {
+        if (dataTable) {
+            dataTable.destroy();
+        }
+
+        const tbody = $('#resultsBody');
+        tbody.empty();
+
+        results.forEach(function(result) {
+            const row = createTableRow(result);
+            tbody.append(row);
+        });
+
+        dataTable = $('#resultsTable').DataTable({
+            pageLength: 25,
+            order: [[0, 'desc']],
+            responsive: true,
+            dom: 'Bfrtip',
+            columnDefs: [
+                { width: '120px', targets: 0 },
+                { width: '100px', targets: 1 },
+                { width: '80px', targets: 2 },
+                { width: '70px', targets: 3 },
+                { width: '100px', targets: 4 },
+                { width: '200px', targets: 5 },
+                { width: '200px', targets: 6 },
+                { width: '80px', targets: 7 },
+                { width: '80px', targets: 8 }
+            ]
+        });
+    }
+
+    function createTableRow(result) {
+        const severityClass = `severity-${result.severity.toLowerCase()}`;
+        const levelClass = `log-level-${result.logLevel.toLowerCase()}`;
+        const matchedClass = `matched-${result.matched}`;
+        const statusBadge = result.matched ?
+            '<span class="badge bg-success">Matched</span>' :
+            '<span class="badge bg-warning">Unmatched</span>';
+
+        return `
+            <tr class="${matchedClass}">
+                <td>${formatTimestamp(result.timestamp)}</td>
+                <td><code>${result.errorCode}</code></td>
+                <td>${result.errorType.displayName}</td>
+                <td class="${levelClass}">${result.logLevel.displayName}</td>
+                <td>${result.component}</td>
+                <td class="error-details" title="${escapeHtml(result.description)}">
+                    ${escapeHtml(result.description)}
+                </td>
+                <td class="solution-cell" title="${escapeHtml(result.solution)}">
+                    ${escapeHtml(result.solution)}
+                </td>
+                <td><span class="badge ${severityClass}">${result.severity.displayName}</span></td>
+                <td>${statusBadge}</td>
+            </tr>
+        `;
+    }
+
+    function formatTimestamp(timestamp) {
+        return new Date(timestamp).toLocaleString();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function exportCSV() {
+        $.ajax({
+            url: '/api/analysis/export/csv',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(analysisResults),
+            xhrFields: { responseType: 'blob' },
+            success: function(data) {
+                downloadFile(data, 'error_analysis_report.csv', 'text/csv');
+            },
+            error: function() {
+                showError('Failed to export CSV');
+            }
+        });
+    }
+
+    function exportHTML() {
+        $.ajax({
+            url: '/api/analysis/export/html',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(analysisResults),
+            success: function(data) {
+                const blob = new Blob([data], { type: 'text/html' });
+                downloadFile(blob, 'error_analysis_report.html', 'text/html');
+            },
+            error: function() {
+                showError('Failed to export HTML');
+            }
+        });
+    }
+
+    function downloadFile(data, filename, mimeType) {
+        const blob = new Blob([data], { type: mimeType });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    }
+
+    function toggleFilter() {
+        $('#filterSection').toggle();
+    }
+
+    function applyFilters() {
+        const severityFilter = $('#severityFilter').val();
+        const levelFilter = $('#levelFilter').val();
+        const matchedFilter = $('#matchedFilter').val();
+        const componentFilter = $('#componentFilter').val().toLowerCase();
+
+        let filteredResults = analysisResults.filter(function(result) {
+            return (!severityFilter || result.severity === severityFilter) &&
+                   (!levelFilter || result.logLevel === levelFilter) &&
+                   (!matchedFilter || result.matched.toString() === matchedFilter) &&
+                   (!componentFilter || result.component.toLowerCase().includes(componentFilter));
+        });
+
+        populateTable(filteredResults);
+        updateStatistics(filteredResults);
+    }
+
+    function showLoading(show) {
+        if (show) {
+            $('#loading').removeClass('d-none');
+            $('#resultsSection').addClass('d-none');
+        } else {
+            $('#loading').addClass('d-none');
+        }
+    }
+
+    function showError(message) {
+        alert('Error: ' + message);
+    }
+</script>
+</body>
+</html>
