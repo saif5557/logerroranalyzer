@@ -31,12 +31,14 @@ public class LogAnalysisController {
     private ReportService reportService;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<ErrorAnalysisResult>> analyzeUploadedFile(@RequestParam("file")MultipartFile file){
-        try{
+    public ResponseEntity<List<ErrorAnalysisResult>> analyzeUploadedFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "logType", defaultValue = "GENERIC") String logType) {
+        try {
             String logContent = new String(file.getBytes());
             String fileName = file.getOriginalFilename();
 
-            List<ErrorAnalysisResult> results = errorAnalysisService.analyzeLogContent(logContent,fileName);
+            List<ErrorAnalysisResult> results = errorAnalysisService.analyzeLogContent(logContent, fileName, logType);
 
             return ResponseEntity.ok(results);
 
@@ -46,16 +48,15 @@ public class LogAnalysisController {
     }
 
     @PostMapping(value = "/text", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<ErrorAnalysisResult>> analyzeTextContent(@RequestBody LogAnalysisRequest request){
+    public ResponseEntity<List<ErrorAnalysisResult>> analyzeTextContent(@RequestBody LogAnalysisRequest request) {
         List<ErrorAnalysisResult> results = errorAnalysisService.analyzeLogContent(
-                request.getLogContent(), request.getFileName()
-        );
+                request.getLogContent(), request.getFileName());
         return ResponseEntity.ok(results);
     }
 
     @PostMapping("/export/csv")
-    public ResponseEntity<byte[]> exportCSV(@RequestBody List<ErrorAnalysisResult> results){
-        try{
+    public ResponseEntity<byte[]> exportCSV(@RequestBody List<ErrorAnalysisResult> results) {
+        try {
             byte[] csvData = reportService.generateCSVReport(results);
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -63,10 +64,10 @@ public class LogAnalysisController {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType("text/csv"));
-            headers.setContentDispositionFormData("attachment",filename);
+            headers.setContentDispositionFormData("attachment", filename);
             headers.setContentLength(csvData.length);
 
-            return new ResponseEntity<>(csvData, headers,HttpStatus.OK);
+            return new ResponseEntity<>(csvData, headers, HttpStatus.OK);
 
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -74,12 +75,12 @@ public class LogAnalysisController {
     }
 
     @PostMapping("/export/html")
-    public ResponseEntity<String> exportHTML(@RequestBody List<ErrorAnalysisResult> results){
+    public ResponseEntity<String> exportHTML(@RequestBody List<ErrorAnalysisResult> results) {
         String htmlReport = reportService.generateHTMLReport(results);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_HTML);
 
-        return new ResponseEntity<>(htmlReport,headers,HttpStatus.OK);
+        return new ResponseEntity<>(htmlReport, headers, HttpStatus.OK);
     }
 }

@@ -1,10 +1,12 @@
 package com.saif.logerroranalyzer.entity;
 
+import com.saif.logerroranalyzer.enums.ApplicationType;
 import com.saif.logerroranalyzer.enums.ErrorSeverity;
 import com.saif.logerroranalyzer.enums.ErrorType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "error_codes")
 public class ErrorCode {
@@ -38,19 +40,24 @@ public class ErrorCode {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column( name = "updated_at")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "application_type")
+    private ApplicationType applicationType;
+
     // Constructors
-    public ErrorCode(){
+    public ErrorCode() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    public ErrorCode(String errorCode, ErrorType errorType, String description, String solution, ErrorSeverity severity, String keywords) {
+    public ErrorCode(String errorCode, ErrorType errorType, String description, String solution, ErrorSeverity severity,
+            String keywords) {
         this();
         this.errorCode = errorCode;
         this.errorType = errorType;
@@ -151,11 +158,19 @@ public class ErrorCode {
     }
 
     @PreUpdate
-    public void preUpdate(){
+    public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 
     public Boolean getIsActive() {
         return isActive;
+    }
+
+    public ApplicationType getApplicationType() {
+        return applicationType;
+    }
+
+    public void setApplicationType(ApplicationType applicationType) {
+        this.applicationType = applicationType;
     }
 }

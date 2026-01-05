@@ -86,6 +86,7 @@
 							<tr>
 								<th>ID</th>
 								<th>Error Code</th>
+								<th>Application</th>
 								<th>Type</th>
 								<th>Description</th>
 								<th>Solution</th>
@@ -119,21 +120,29 @@
 								<input type="text" class="form-control" id="code" required>
 							</div>
 							<div class="col-md-6">
-								<label for="type" class="form-label">Error Type *</label>
-								<select class="form-select" id="type" required>
+								<label for="application" class="form-label">Application *</label>
+								<select class="form-select" id="application" required>
 									<!-- Loaded via JS -->
 								</select>
 							</div>
 						</div>
 						<div class="row mb-3">
 							<div class="col-md-6">
+								<label for="type" class="form-label">Error Type *</label>
+								<select class="form-select" id="type" required>
+									<!-- Loaded via JS -->
+								</select>
+							</div>
+							<div class="col-md-6">
 								<label for="severity" class="form-label">Severity *</label>
 								<select class="form-select" id="severity" required>
 									<!-- Loaded via JS -->
 								</select>
 							</div>
+						</div>
+						<div class="row mb-3">
 							<div class="col-md-6">
-								<div class="form-check mt-4">
+								<div class="form-check mt-2">
 									<input class="form-check-input" type="checkbox" id="active" checked>
 									<label class="form-check-label" for="active">Active</label>
 								</div>
@@ -188,10 +197,19 @@
 			});
 
 			// Load Severities
+			// Load Severities
 			$.get('/api/error-codes/severities', function (severities) {
 				const severitySelect = $('#severity');
 				severities.forEach(severity => {
 					severitySelect.append(`<option value="${severity}">${severity}</option>`);
+				});
+			});
+
+			// Load Applications
+			$.get('/api/error-codes/applications', function (apps) {
+				const appSelect = $('#application');
+				apps.forEach(app => {
+					appSelect.append(`<option value="${app}">${app}</option>`);
 				});
 			});
 		}
@@ -210,6 +228,7 @@
                     <tr>
                         <td>${item.id}</td>
                         <td><code>${item.errorCode}</code></td>
+                        <td>${item.applicationType ? item.applicationType : '-'}</td>
                         <td>${item.errorType}</td>
                         <td class="description-cell" title="${item.description}">${item.description}</td>
                         <td class="description-cell" title="${item.solution}">${item.solution}</td>
@@ -241,6 +260,7 @@
 			$.get(`/api/error-codes/${id}`, function (data) {
 				$('#errorCodeId').val(data.id);
 				$('#code').val(data.errorCode);
+				$('#application').val(data.applicationType);
 				$('#type').val(data.errorType);
 				$('#severity').val(data.severity);
 				$('#description').val(data.description);
@@ -268,6 +288,7 @@
 			const id = $('#errorCodeId').val();
 			const data = {
 				errorCode: $('#code').val(),
+				applicationType: $('#application').val(),
 				errorType: $('#type').val(),
 				severity: $('#severity').val(),
 				description: $('#description').val(),

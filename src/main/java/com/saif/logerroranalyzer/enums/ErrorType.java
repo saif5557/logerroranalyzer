@@ -10,13 +10,16 @@ public enum ErrorType {
     AUTHENTICATION_ERROR("Authentication Error"),
     PERMISSION_ERROR("Permission Error"),
     TIMEOUT_ERROR("Timeout Error"),
+    MES_APPLICATION_ERROR("MES Application Error"),
     UNKNOWN_ERROR("Unknown Error");
 
     private final String displayName;
 
-    ErrorType(String displayName){
+    ErrorType(String displayName) {
         this.displayName = displayName;
     }
 
-    public String getDisplayName(){return displayName;}
+    public String getDisplayName() {
+        return displayName;
+    }
 }

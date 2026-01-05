@@ -1,5 +1,6 @@
 package com.saif.logerroranalyzer.dto;
 
+import com.saif.logerroranalyzer.enums.ApplicationType;
 import com.saif.logerroranalyzer.enums.ErrorSeverity;
 import com.saif.logerroranalyzer.enums.ErrorType;
 
@@ -13,8 +14,9 @@ public class ErrorCodeDto {
     private String keywords;
     private String regexPattern;
     private Boolean isActive;
+    private ApplicationType applicationType;
 
-    //Constructors
+    // Constructors
 
     public ErrorCodeDto() {
     }
@@ -91,5 +93,13 @@ public class ErrorCodeDto {
 
     public void setIsActive(Boolean active) {
         isActive = active;
+    }
+
+    public ApplicationType getApplicationType() {
+        return applicationType;
+    }
+
+    public void setApplicationType(ApplicationType applicationType) {
+        this.applicationType = applicationType;
     }
 }

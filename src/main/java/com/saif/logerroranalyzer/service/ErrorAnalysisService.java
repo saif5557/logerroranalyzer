@@ -23,6 +23,10 @@ public class ErrorAnalysisService {
     private ErrorCodeService errorCodeService;
 
     public List<ErrorAnalysisResult> analyzeLogContent(String logContent, String fileName) {
+        return analyzeLogContent(logContent, fileName, "GENERIC");
+    }
+
+    public List<ErrorAnalysisResult> analyzeLogContent(String logContent, String fileName, String logType) {
         java.util.Map<String, ErrorAnalysisResult> aggregatedResults = new java.util.HashMap<>();
 
         // Parse log content
@@ -32,7 +36,7 @@ public class ErrorAnalysisService {
         // Analyze each log entry
         for (LogEntryDto entry : logEntries) {
             if (shouldAnalyze(entry)) {
-                ErrorAnalysisResult result = analyzeLogEntry(entry);
+                ErrorAnalysisResult result = analyzeLogEntry(entry, logType);
 
                 String key = generateGroupingKey(result);
 
@@ -56,7 +60,7 @@ public class ErrorAnalysisService {
         return result.getMessage();
     }
 
-    private ErrorAnalysisResult analyzeLogEntry(LogEntryDto entry) {
+    private ErrorAnalysisResult analyzeLogEntry(LogEntryDto entry, String logType) {
         // Try find matching error code
         Optional<ErrorCode> matchedErrorCode = errorCodeService.findMatchingErrorCode(
                 entry.getMessage(), entry.getErrorCode());
@@ -80,9 +84,11 @@ public class ErrorAnalysisService {
         } else {
             // Create default analysis for unmatched errors
             result.setErrorCode(entry.getErrorCode() != null ? entry.getErrorCode() : "UNKNOWN");
-            result.setErrorType(determineErrorType(entry));
+            result.setErrorType(determineErrorType(entry, logType));
             result.setDescription("Unmatched error: " + entry.getMessage());
-            result.setSolution(generateDefaultSolution(entry));
+            result.setDescription("Unmatched error: " + entry.getMessage());
+            result.setSolution(generateDefaultSolution(entry, logType));
+            result.setSeverity(determineServerityFromLogLevel(entry.getLogLevel()));
             result.setSeverity(determineServerityFromLogLevel(entry.getLogLevel()));
             result.setMatched(false);
         }
@@ -104,10 +110,12 @@ public class ErrorAnalysisService {
         }
     }
 
-    private String generateDefaultSolution(LogEntryDto entry) {
-        ErrorType errorType = determineErrorType(entry);
+    private String generateDefaultSolution(LogEntryDto entry, String logType) {
+        ErrorType errorType = determineErrorType(entry, logType);
 
         switch (errorType) {
+            case MES_APPLICATION_ERROR:
+                return "Check MES application logs, verify configuration, and restart MES services if necessary.";
             case NETWORK_ERROR:
                 return "Check network connectivity, verify server status, and review firewall settings";
             case HARDWARE_ERROR:
@@ -128,9 +136,13 @@ public class ErrorAnalysisService {
         }
     }
 
-    private ErrorType determineErrorType(LogEntryDto entry) {
+    private ErrorType determineErrorType(LogEntryDto entry, String logType) {
         String message = entry.getMessage().toLowerCase();
         String component = entry.getComponent().toLowerCase();
+
+        if ("MES".equalsIgnoreCase(logType)) {
+            return ErrorType.MES_APPLICATION_ERROR;
+        }
 
         if (message.contains("network") || message.contains("connection") ||
                 message.contains("socket") || message.contains("tcp")) {
