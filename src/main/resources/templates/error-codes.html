@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
 	<meta charset="UTF-8">
@@ -60,6 +60,21 @@
 					<li class="nav-item">
 						<a class="nav-link" href="/reports"><i class="fas fa-chart-bar"></i> Reports</a>
 					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+							data-bs-toggle="dropdown" aria-expanded="false">
+							<i class="fas fa-user"></i> <span sec:authentication="name">User</span>
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+							<li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" href="/admin/users">Manage
+									Users</a></li>
+							<li>
+								<form th:action="@{/logout}" method="post">
+									<button class="dropdown-item" type="submit">Logout</button>
+								</form>
+							</li>
+						</ul>
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -70,7 +85,7 @@
 			<div class="col-md-8">
 				<h1><i class="fas fa-cog"></i> Error Code Management</h1>
 			</div>
-			<div class="col-md-4 text-end">
+			<div class="col-md-4 text-end" sec:authorize="hasRole('ADMIN')">
 				<button class="btn btn-primary" id="addErrorCodeBtn">
 					<i class="fas fa-plus"></i> Add New Error Code
 				</button>
@@ -174,7 +189,11 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-	<script>
+	<script th:inline="javascript">
+		/*<![CDATA[*/
+		const isAdmin = /*[[${#authorization.expression('hasRole(''ADMIN'')')}]]*/ false;
+		/*]]>*/
+
 		let errorCodeTable;
 		let modal;
 
@@ -196,7 +215,6 @@
 				});
 			});
 
-			// Load Severities
 			// Load Severities
 			$.get('/api/error-codes/severities', function (severities) {
 				const severitySelect = $('#severity');
@@ -224,6 +242,20 @@
 				tbody.empty();
 
 				data.forEach(item => {
+					let actionButtons = '';
+					if (isAdmin) {
+						actionButtons = `
+                            <button class="btn btn-sm btn-info me-1" onclick="editErrorCode(${item.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteErrorCode(${item.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `;
+					} else {
+						actionButtons = `<span class="text-muted"><i class="fas fa-lock"></i> Read Only</span>`;
+					}
+
 					tbody.append(`
                     <tr>
                         <td>${item.id}</td>
@@ -233,14 +265,7 @@
                         <td class="description-cell" title="${item.description}">${item.description}</td>
                         <td class="description-cell" title="${item.solution}">${item.solution}</td>
                         <td><span class="badge severity-${item.severity.toLowerCase()}">${item.severity}</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-info me-1" onclick="editErrorCode(${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteErrorCode(${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
+                        <td>${actionButtons}</td>
                     </tr>
                 `);
 				});
