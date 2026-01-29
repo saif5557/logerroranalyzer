@@ -4,3 +4,5 @@ D:\logerroranalyzer\logerroranalyzer\src\test\java\com\saif\logerroranalyzer\con
 D:\logerroranalyzer\logerroranalyzer\src\test\java\com\saif\logerroranalyzer\controller\RoleManagementTest.java
 D:\logerroranalyzer\logerroranalyzer\src\test\java\com\saif\logerroranalyzer\FullContextTest.java
 D:\logerroranalyzer\logerroranalyzer\src\test\java\com\saif\logerroranalyzer\LogerroranalyzerApplicationTests.java
+D:\logerroranalyzer\logerroranalyzer\src\test\java\com\saif\logerroranalyzer\service\AnalysisRunnerTest.java
+D:\logerroranalyzer\logerroranalyzer\src\test\java\com\saif\logerroranalyzer\util\LogPatternMatcherTest.java

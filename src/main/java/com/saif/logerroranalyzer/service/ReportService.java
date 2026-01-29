@@ -68,7 +68,8 @@ public class ReportService {
         html.append("<h1>Error Analysis Report</h1>");
         html.append("<table>");
         html.append("<tr><th>Count</th><th>Timestamp</th><th>Error Code</th><th>Type</th><th>Level</th>");
-        html.append("<th>Component</th><th>Description</th><th>Solution</th><th>Severity</th></tr>");
+        html.append(
+                "<th>Component</th><th>Description</th><th>Solution</th><th>Severity</th><th>Actual Error Text</th></tr>");
 
         for (ErrorAnalysisResult result : results) {
             String rowClass = "severity-" + result.getSeverity().name().toLowerCase();
@@ -82,6 +83,7 @@ public class ReportService {
             html.append(String.format("<td>%s</td>", escapeHtml(result.getDescription())));
             html.append(String.format("<td>%s</td>", escapeHtml(result.getSolution())));
             html.append(String.format("<td>%s</td>", result.getSeverity().getDisplayName()));
+            html.append(String.format("<td>%s</td>", escapeHtml(result.getMessage())));
             html.append("</tr>");
         }
 

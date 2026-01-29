@@ -189,8 +189,8 @@
                             <input type="radio" class="btn-check" name="logType" id="typeMES" value="MES">
                             <label class="btn btn-outline-primary" for="typeMES">MES Log</label>
 
-                            <input type="radio" class="btn-check" name="logType" id="typeSPM" value="SPM">
-                            <label class="btn btn-outline-primary" for="typeSPM">SPM Log</label>
+                            <!-- <input type="radio" class="btn-check" name="logType" id="typeSPM" value="SPM">
+                            <label class="btn btn-outline-primary" for="typeSPM">SPM Log</label> -->
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -297,6 +297,7 @@
                                     <th>Description</th>
                                     <th>Solution</th>
                                     <th>Severity</th>
+                                    <th>Actual Error Text</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -304,6 +305,25 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailsModalTitle">Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="detailsModalContent" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="copyDetails()">Copy</button>
                 </div>
             </div>
         </div>
@@ -470,7 +490,8 @@
                     { width: '200px', targets: 6 },
                     { width: '200px', targets: 7 },
                     { width: '80px', targets: 8 },
-                    { width: '80px', targets: 9 }
+                    { width: '200px', targets: 9 },
+                    { width: '80px', targets: 10 }
                 ]
             });
         }
@@ -483,6 +504,20 @@
                 '<span class="badge bg-success">Matched</span>' :
                 '<span class="badge bg-warning">Unmatched</span>';
 
+            // Function to generate content with eye button if needed
+            const createCellWithEye = (content, title) => {
+                if (!content) return '';
+                const escapedContent = escapeHtml(content);
+                return `
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="text-truncate" style="max-width: 150px;" title="${escapedContent}">${escapedContent}</span>
+                        <button class="btn btn-sm btn-outline-primary ms-1" onclick="showDetails('${escapeJs(content)}', '${title}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                `;
+            };
+
             return `
             <tr class="${matchedClass}">
                 <td><strong>${result.count}</strong></td>
@@ -491,16 +526,26 @@
                 <td>${result.errorType.displayName}</td>
                 <td class="${levelClass}">${result.logLevel.displayName}</td>
                 <td>${result.component}</td>
-                <td class="error-details" title="${escapeHtml(result.description)}">
-                    ${escapeHtml(result.description)}
-                </td>
-                <td class="solution-cell" title="${escapeHtml(result.solution)}">
-                    ${escapeHtml(result.solution)}
-                </td>
+                <td>${createCellWithEye(result.description, 'Description')}</td>
+                <td>${createCellWithEye(result.solution, 'Solution')}</td>
                 <td><span class="badge ${severityClass}">${result.severity.displayName}</span></td>
+                <td>${createCellWithEye(result.message, 'Actual Error Text')}</td>
                 <td>${statusBadge}</td>
             </tr>
         `;
+        }
+
+        function showDetails(content, title) {
+            $('#detailsModalTitle').text(title);
+            $('#detailsModalContent').text(content);
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        }
+
+        function copyDetails() {
+            const content = $('#detailsModalContent').text();
+            navigator.clipboard.writeText(content).then(() => {
+                alert('Copied to clipboard!');
+            });
         }
 
         function formatTimestamp(timestamp) {
@@ -508,9 +553,15 @@
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function escapeJs(text) {
+            if (!text) return '';
+            return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
         }
 
         function exportCSV() {

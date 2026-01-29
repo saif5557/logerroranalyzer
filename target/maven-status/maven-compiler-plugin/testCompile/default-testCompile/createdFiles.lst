@@ -1,6 +1,8 @@
+com\saif\logerroranalyzer\util\LogPatternMatcherTest.class
 com\saif\logerroranalyzer\controller\AuthUiTest.class
 com\saif\logerroranalyzer\FullContextTest.class
 com\saif\logerroranalyzer\controller\PublicAccessTest.class
 com\saif\logerroranalyzer\controller\ErrorCodeSecurityTest.class
 com\saif\logerroranalyzer\controller\RoleManagementTest.class
 com\saif\logerroranalyzer\LogerroranalyzerApplicationTests.class
+com\saif\logerroranalyzer\service\AnalysisRunnerTest.class

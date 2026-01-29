@@ -179,31 +179,8 @@ public class ErrorAnalysisService {
     }
 
     private boolean shouldAnalyze(LogEntryDto entry) {
-        // Analyze entries that are errors, warnings, critical, or fatal
-        LogLevel level = entry.getLogLevel();
-        return level == LogLevel.ERROR ||
-                level == LogLevel.WARNING ||
-                level == LogLevel.CRITICAL ||
-                level == LogLevel.FATAL ||
-                entry.getErrorCode() != null ||
-                containsErrorKeywords(entry.getMessage());
+        // Analyze entries only if the level contains "ERROR"
+        return entry.getLogLevel().name().contains("ERROR");
     }
 
-    private boolean containsErrorKeywords(String message) {
-        if (message == null)
-            return false;
-
-        String lowerMessage = message.toLowerCase();
-        return lowerMessage.contains("error") ||
-                lowerMessage.contains("fail") ||
-                lowerMessage.contains("exception") ||
-                lowerMessage.contains("timeout") ||
-                lowerMessage.contains("refused") ||
-                lowerMessage.contains("denied") ||
-                lowerMessage.contains("missing") ||
-                lowerMessage.contains("not found") ||
-                lowerMessage.contains("invalid") ||
-                lowerMessage.contains("unable") ||
-                lowerMessage.contains("cannot");
-    }
 }
