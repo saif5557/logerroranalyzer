@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local build/test output ###
+error_log.txt
+final_log.txt
+test_output.txt
+test_output_2.txt
+test_rbac_log.txt
+tests_log.txt

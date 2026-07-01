@@ -1,16 +1,354 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Error Code Management</title>
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-	<div class="container py-5">
-		<h1 class="mb-3">Error Code Management</h1>
-		<p>This page is under construction. Use the <a href="/">Home</a> page to analyze logs.</p>
-	</div>
-</body>
-</html>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-bs5/1.13.4/dataTables.bootstrap5.min.css"
+		rel="stylesheet">
+	<style>
+		.severity-critical {
+			background-color: #dc3545;
+			color: white;
+		}
 
+		.severity-high {
+			background-color: #fd7e14;
+			color: white;
+		}
+
+		.severity-medium {
+			background-color: #ffc107;
+			color: black;
+		}
+
+		.severity-low {
+			background-color: #28a745;
+			color: white;
+		}
+
+		.description-cell {
+			max-width: 300px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- Navigation -->
+	<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+		<div class="container">
+			<a class="navbar-brand" href="/">
+				<i class="fas fa-bug"></i> Log Error Analyzer
+			</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item">
+						<a class="nav-link" href="/"><i class="fas fa-home"></i> Home</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link active" href="/error-codes"><i class="fas fa-cog"></i> Error Codes</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/reports"><i class="fas fa-chart-bar"></i> Reports</a>
+					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+							data-bs-toggle="dropdown" aria-expanded="false">
+							<i class="fas fa-user"></i> <span sec:authentication="name">User</span>
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+							<li sec:authorize="hasRole('ADMIN')"><a class="dropdown-item" href="/admin/users">Manage
+									Users</a></li>
+							<li>
+								<form th:action="@{/logout}" method="post">
+									<button class="dropdown-item" type="submit">Logout</button>
+								</form>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<div class="container mt-4">
+		<div class="row mb-4">
+			<div class="col-md-8">
+				<h1><i class="fas fa-cog"></i> Error Code Management</h1>
+			</div>
+			<div class="col-md-4 text-end" sec:authorize="hasRole('ADMIN')">
+				<button class="btn btn-primary" id="addErrorCodeBtn">
+					<i class="fas fa-plus"></i> Add New Error Code
+				</button>
+			</div>
+		</div>
+
+		<!-- Error Codes Table -->
+		<div class="card">
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-striped table-hover" id="errorCodesTable">
+						<thead class="table-dark">
+							<tr>
+								<th>ID</th>
+								<th>Error Code</th>
+								<th>Application</th>
+								<th>Type</th>
+								<th>Description</th>
+								<th>Solution</th>
+								<th>Severity</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody id="errorCodesBody">
+							<!-- Loaded via JS -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Add/Edit Modal -->
+	<div class="modal fade" id="errorCodeModal" tabindex="-1">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="modalTitle">Add Error Code</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<form id="errorCodeForm">
+						<input type="hidden" id="errorCodeId">
+						<div class="row mb-3">
+							<div class="col-md-6">
+								<label for="code" class="form-label">Error Code *</label>
+								<input type="text" class="form-control" id="code" required>
+							</div>
+							<div class="col-md-6">
+								<label for="application" class="form-label">Application *</label>
+								<select class="form-select" id="application" required>
+									<!-- Loaded via JS -->
+								</select>
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-md-6">
+								<label for="type" class="form-label">Error Type *</label>
+								<select class="form-select" id="type" required>
+									<!-- Loaded via JS -->
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label for="severity" class="form-label">Severity *</label>
+								<select class="form-select" id="severity" required>
+									<!-- Loaded via JS -->
+								</select>
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-md-6">
+								<div class="form-check mt-2">
+									<input class="form-check-input" type="checkbox" id="active" checked>
+									<label class="form-check-label" for="active">Active</label>
+								</div>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label for="description" class="form-label">Description *</label>
+							<textarea class="form-control" id="description" rows="2" required></textarea>
+						</div>
+						<div class="mb-3">
+							<label for="solution" class="form-label">Solution</label>
+							<textarea class="form-control" id="solution" rows="3"></textarea>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-primary" id="saveErrorCodeBtn">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Scripts -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net/1.13.4/jquery.dataTables.min.js"></script>
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-bs5/1.13.4/dataTables.bootstrap5.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+	<script th:inline="javascript">
+		/*<![CDATA[*/
+		const isAdmin = /*[[${#authorization.expression('hasRole(''ADMIN'')')}]]*/ false;
+		/*]]>*/
+
+		let errorCodeTable;
+		let modal;
+
+		$(document).ready(function () {
+			modal = new bootstrap.Modal(document.getElementById('errorCodeModal'));
+			loadDropdowns();
+			loadErrorCodes();
+
+			$('#addErrorCodeBtn').click(openAddModal);
+			$('#saveErrorCodeBtn').click(saveErrorCode);
+		});
+
+		function loadDropdowns() {
+			// Load Types
+			$.get('/api/error-codes/types', function (types) {
+				const typeSelect = $('#type');
+				types.forEach(type => {
+					typeSelect.append(`<option value="${type}">${type}</option>`);
+				});
+			});
+
+			// Load Severities
+			$.get('/api/error-codes/severities', function (severities) {
+				const severitySelect = $('#severity');
+				severities.forEach(severity => {
+					severitySelect.append(`<option value="${severity}">${severity}</option>`);
+				});
+			});
+
+			// Load Applications
+			$.get('/api/error-codes/applications', function (apps) {
+				const appSelect = $('#application');
+				apps.forEach(app => {
+					appSelect.append(`<option value="${app}">${app}</option>`);
+				});
+			});
+		}
+
+		function loadErrorCodes() {
+			$.get('/api/error-codes', function (data) {
+				if (errorCodeTable) {
+					errorCodeTable.destroy();
+				}
+
+				const tbody = $('#errorCodesBody');
+				tbody.empty();
+
+				data.forEach(item => {
+					let actionButtons = '';
+					if (isAdmin) {
+						actionButtons = `
+                            <button class="btn btn-sm btn-info me-1" onclick="editErrorCode(${item.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteErrorCode(${item.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `;
+					} else {
+						actionButtons = `<span class="text-muted"><i class="fas fa-lock"></i> Read Only</span>`;
+					}
+
+					tbody.append(`
+                    <tr>
+                        <td>${item.id}</td>
+                        <td><code>${item.errorCode}</code></td>
+                        <td>${item.applicationType ? item.applicationType : '-'}</td>
+                        <td>${item.errorType}</td>
+                        <td class="description-cell" title="${item.description}">${item.description}</td>
+                        <td class="description-cell" title="${item.solution}">${item.solution}</td>
+                        <td><span class="badge severity-${item.severity.toLowerCase()}">${item.severity}</span></td>
+                        <td>${actionButtons}</td>
+                    </tr>
+                `);
+				});
+
+				errorCodeTable = $('#errorCodesTable').DataTable();
+			});
+		}
+
+		function openAddModal() {
+			$('#errorCodeId').val('');
+			$('#errorCodeForm')[0].reset();
+			$('#modalTitle').text('Add Error Code');
+			modal.show();
+		}
+
+		window.editErrorCode = function (id) {
+			$.get(`/api/error-codes/${id}`, function (data) {
+				$('#errorCodeId').val(data.id);
+				$('#code').val(data.errorCode);
+				$('#application').val(data.applicationType);
+				$('#type').val(data.errorType);
+				$('#severity').val(data.severity);
+				$('#description').val(data.description);
+				$('#solution').val(data.solution);
+				$('#active').prop('checked', data.active);
+
+				$('#modalTitle').text('Edit Error Code');
+				modal.show();
+			});
+		};
+
+		window.deleteErrorCode = function (id) {
+			if (confirm('Are you sure you want to delete this error code?')) {
+				$.ajax({
+					url: `/api/error-codes/${id}`,
+					type: 'DELETE',
+					success: function () {
+						loadErrorCodes();
+					}
+				});
+			}
+		};
+
+		function saveErrorCode() {
+			const id = $('#errorCodeId').val();
+			const data = {
+				errorCode: $('#code').val(),
+				applicationType: $('#application').val(),
+				errorType: $('#type').val(),
+				severity: $('#severity').val(),
+				description: $('#description').val(),
+				solution: $('#solution').val(),
+				active: $('#active').is(':checked')
+			};
+
+			const method = id ? 'PUT' : 'POST';
+			const url = id ? `/api/error-codes/${id}` : '/api/error-codes';
+
+			$.ajax({
+				url: url,
+				type: method,
+				contentType: 'application/json',
+				data: JSON.stringify(data),
+				success: function () {
+					modal.hide();
+					loadErrorCodes();
+					Swal.fire({
+						icon: 'success',
+						title: 'Saved!',
+						showConfirmButton: false,
+						timer: 1500
+					});
+				},
+				error: function () {
+					Swal.fire({
+						icon: 'error',
+						title: 'Error',
+						text: 'Failed to save error code'
+					});
+				}
+			});
+		}
+	</script>
+</body>
+
+</html>

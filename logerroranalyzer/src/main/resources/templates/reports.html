@@ -1,16 +1,88 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Analysis Reports</title>
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-	<div class="container py-5">
-		<h1 class="mb-3">Analysis Reports</h1>
-		<p>This page is under construction. Use the <a href="/">Home</a> page to analyze logs and export reports.</p>
-	</div>
-</body>
-</html>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+	<style>
+		.feature-card {
+			transition: transform 0.3s;
+		}
 
+		.feature-card:hover {
+			transform: translateY(-5px);
+		}
+	</style>
+</head>
+
+<body>
+	<!-- Navigation -->
+	<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+		<div class="container">
+			<a class="navbar-brand" href="/">
+				<i class="fas fa-bug"></i> Log Error Analyzer
+			</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item">
+						<a class="nav-link" href="/"><i class="fas fa-home"></i> Home</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/error-codes"><i class="fas fa-cog"></i> Error Codes</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link active" href="/reports"><i class="fas fa-chart-bar"></i> Reports</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<div class="container mt-4">
+		<div class="row">
+			<div class="col-12 text-center mb-5">
+				<h1><i class="fas fa-chart-line"></i> Analysis Reports</h1>
+				<p class="lead text-muted">Generate and export detailed insights from your log files</p>
+			</div>
+		</div>
+
+		<div class="row justify-content-center">
+			<div class="col-md-5 mb-4">
+				<div class="card feature-card h-100 shadow-sm">
+					<div class="card-body text-center p-5">
+						<i class="fas fa-file-csv fa-4x text-success mb-3"></i>
+						<h3>CSV Export</h3>
+						<p>Download your analysis results in CSV format for further processing in Excel or other tools.
+						</p>
+						<a href="/" class="btn btn-outline-success mt-2">Go to Analyzer</a>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-5 mb-4">
+				<div class="card feature-card h-100 shadow-sm">
+					<div class="card-body text-center p-5">
+						<i class="fas fa-file-code fa-4x text-info mb-3"></i>
+						<h3>HTML Report</h3>
+						<p>Generate a styled HTML report that can be easily shared with your team or management.</p>
+						<a href="/" class="btn btn-outline-info mt-2">Go to Analyzer</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="alert alert-info mt-4" role="alert">
+			<i class="fas fa-info-circle"></i> <strong>Note:</strong> Reports are generated dynamically based on the log
+			file you analyze on the Home page. We do not store historic reports on the server at this time.
+		</div>
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

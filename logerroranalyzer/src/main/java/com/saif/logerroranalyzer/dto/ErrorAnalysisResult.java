@@ -19,13 +19,16 @@ public class ErrorAnalysisResult {
     private String fullLogLine;
     private String fileName;
     private boolean isMatched;
+    private int count = 1;
 
-    //Constructors
+    // Constructors
 
     public ErrorAnalysisResult() {
     }
 
-    public ErrorAnalysisResult(LocalDateTime timestamp, String errorCode, ErrorType errorType, LogLevel logLevel, String component, String message, String description, String solution, ErrorSeverity severity, String fullLogLine, boolean isMatched) {
+    public ErrorAnalysisResult(LocalDateTime timestamp, String errorCode, ErrorType errorType, LogLevel logLevel,
+            String component, String message, String description, String solution, ErrorSeverity severity,
+            String fullLogLine, boolean isMatched) {
         this.timestamp = timestamp;
         this.errorCode = errorCode;
         this.errorType = errorType;
@@ -135,5 +138,17 @@ public class ErrorAnalysisResult {
 
     public void setMatched(boolean matched) {
         isMatched = matched;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    public void incrementCount() {
+        this.count++;
     }
 }
